@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 6881:6881/tcp
+      - 6881:6881/udp
+      - 8085:8085  # qBittorrent Web UI
+    volumes:
+      - /srv/mergerfs/bigpool/docker:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=windscribe
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=
+      - WIREGUARD_ADDRESSES=100.xxx.xxx.xxx/32
+      - WIREGUARD_PRESHARED_KEY=
+      - SERVER_REGIONS=US Central
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:libtorrentv1 #make sure to always select this or downloads break
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - WEBUI_PORT=8085
+    volumes:
+      - /srv/mergerfs/bigpool/docker/qbittorrent:/config
+      - /srv/mergerfs/bigpool/linuxmedia/:/data
+    restart: unless-stopped
